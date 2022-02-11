@@ -8,26 +8,27 @@ namespace UnityCraft.Core.Graphics.Textures
     {
         private const int MaxMipmapsCount = 16;
 
-        private readonly MipmapHeader[] mipmapHeaders;
         private readonly int mipmapsCount = 0;
 
         internal MipmapLocator(BinaryReader reader)
         {
-            mipmapHeaders = new MipmapHeader[MaxMipmapsCount];
+            MipmapHeaders = new MipmapHeader[MaxMipmapsCount];
 
-            var offsets = reader.ReadUInt32Array(mipmapHeaders.Length);
-            var sizes = reader.ReadUInt32Array(mipmapHeaders.Length);
+            var offsets = reader.ReadUInt32Array(MipmapHeaders.Length);
+            var sizes = reader.ReadUInt32Array(MipmapHeaders.Length);
 
-            for (int i = 0; i < mipmapHeaders.Length; i++)
+            for (int i = 0; i < MipmapHeaders.Length; i++)
             {
-                mipmapHeaders[i] = new MipmapHeader
+                MipmapHeaders[i] = new MipmapHeader
                 {
                     Offset = offsets[i],
                     Size = sizes[i],
                 };
             }
 
-            mipmapsCount = mipmapHeaders.Count(x => x.Offset != 0);
+            mipmapsCount = MipmapHeaders.Count(x => x.Offset != 0);
         }
+
+        internal MipmapHeader[] MipmapHeaders { get; }
     }
 }

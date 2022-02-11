@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using UnityCraft.Core.Extensions;
@@ -12,7 +13,11 @@ namespace UnityCraft.Core.Graphics.Textures
             Signature.BLP1,
         };
 
+        private readonly Stream stream;
+
         private readonly Signature signature;
+        private readonly Compression compression;
+
         private readonly AlphaBits alphaBits;
 
         private readonly uint width;
@@ -21,35 +26,85 @@ namespace UnityCraft.Core.Graphics.Textures
         private readonly Extra extra;
         private readonly bool hasMipmaps;
 
-        public Texture(BinaryReader reader)
+        private readonly MipmapLocator mipmapLocator;
+
+        private readonly Palette palette;
+
+        public Texture(Stream stream)
         {
-            signature = reader.ReadUInt32<Signature>();
-            if (!supportedSignatures.Contains(signature))
+            using (var reader = new BinaryReader(stream))
             {
-                throw new NotSupportedException($"{signature} is not supported.");
+                signature = reader.ReadUInt32<Signature>();
+                if (!supportedSignatures.Contains(signature))
+                {
+                    throw new NotSupportedException($"{signature} is not supported.");
+                }
+
+                compression = reader.ReadUInt32<Compression>();
+
+                alphaBits = new AlphaBits(reader.ReadUInt32(), compression);
+
+                width = reader.ReadUInt32();
+                height = reader.ReadUInt32();
+
+                extra = new Extra(reader.ReadUInt32());
+                hasMipmaps = Convert.ToBoolean(reader.ReadUInt32());
+
+                mipmapLocator = new MipmapLocator(reader);
+
+                switch (compression)
+                {
+                    case Compression.Jpeg:
+                        break;
+
+                    case Compression.Palette:
+                        palette = new Palette(reader);
+                        break;
+                }
             }
+        }
 
-            var compression = reader.ReadUInt32<Compression>();
+        // TODO: Add clamp
+        public Color[,] GetPixels(int mipmapLevel)
+        {
+            var data = GetRawData(mipmapLevel);
 
-            alphaBits = new AlphaBits(reader.ReadUInt32(), compression);
-
-            width = reader.ReadUInt32();
-            height = reader.ReadUInt32();
-
-            extra = new Extra(reader.ReadUInt32());
-            hasMipmaps = Convert.ToBoolean(reader.ReadUInt32());
-
-            var mipmapLocator = new MipmapLocator(reader);
+            var scale = (int)Math.Pow(2, mipmapLevel);
+            var size = new Size((int)width / scale, (int)height / scale);
 
             switch (compression)
             {
                 case Compression.Jpeg:
-                    break;
+                    // TODO: Implement
+                    throw new NotImplementedException();
 
                 case Compression.Palette:
-                    new Palette(reader);
-                    break;
+                    if (palette == null)
+                    {
+                        throw new NullReferenceException(nameof(palette));
+                    }
+
+                    return palette.GetPixels(size, data);
+
+                default:
+                    throw new IndexOutOfRangeException();
             }
+        }
+
+        private byte[] GetRawData(int mipmapLevel)
+        {
+            if (stream == null)
+            {
+                throw new ObjectDisposedException(nameof(stream));
+            }
+
+            var mipmap = mipmapLocator.MipmapHeaders[mipmapLevel];
+
+            var data = new byte[mipmap.Size];
+            stream.Position = mipmap.Offset;
+            stream.Read(data, 0, data.Length);
+
+            return data;
         }
     }
 }
