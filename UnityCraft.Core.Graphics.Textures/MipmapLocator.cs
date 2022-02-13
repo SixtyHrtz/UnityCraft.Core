@@ -6,9 +6,7 @@ namespace UnityCraft.Core.Graphics.Textures
 {
     internal class MipmapLocator
     {
-        private const int MaxMipmapsCount = 16;
-
-        private readonly int mipmapsCount = 0;
+        public const int MaxMipmapsCount = 16;
 
         internal MipmapLocator(BinaryReader reader)
         {
@@ -26,8 +24,10 @@ namespace UnityCraft.Core.Graphics.Textures
                 };
             }
 
-            mipmapsCount = MipmapHeaders.Count(x => x.Offset != 0);
+            MipmapsCount = MipmapHeaders.Count(x => x.Offset != 0);
         }
+
+        public int MipmapsCount { get; }
 
         internal MipmapHeader[] MipmapHeaders { get; }
     }

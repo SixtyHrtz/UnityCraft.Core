@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Drawing;
+using System.IO;
 
 namespace UnityCraft.Core.Graphics.Textures
 {
@@ -10,6 +11,11 @@ namespace UnityCraft.Core.Graphics.Textures
         {
             var headerSize = reader.ReadUInt32();
             header = reader.ReadBytes((int)headerSize);
+        }
+
+        internal Color[,] GetPixels(byte[] data)
+        {
+            throw new System.NotImplementedException();
         }
     }
 }

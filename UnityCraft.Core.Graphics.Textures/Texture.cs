@@ -7,14 +7,12 @@ using UnityCraft.Core.Extensions;
 
 namespace UnityCraft.Core.Graphics.Textures
 {
-    public class Texture
+    public class Texture : IDisposable
     {
         private readonly Signature[] supportedSignatures = new Signature[]
         {
             Signature.BLP1,
         };
-
-        private readonly Stream stream;
 
         private readonly Signature signature;
         private readonly Compression compression;
@@ -29,7 +27,10 @@ namespace UnityCraft.Core.Graphics.Textures
 
         private readonly MipmapLocator mipmapLocator;
 
+        private readonly Jpeg jpeg;
         private readonly Palette palette;
+
+        private Stream stream;
 
         public Texture(Stream stream)
         {
@@ -58,6 +59,7 @@ namespace UnityCraft.Core.Graphics.Textures
                 switch (compression)
                 {
                     case Compression.Jpeg:
+                        jpeg = new Jpeg(reader);
                         break;
 
                     case Compression.Palette:
@@ -67,9 +69,15 @@ namespace UnityCraft.Core.Graphics.Textures
             }
         }
 
+        public int Width => (int)width;
+
+        public int Height => (int)height;
+
+        public int MipmapCount => mipmapLocator.MipmapsCount;
+
         public Color[,] GetPixels(int mipmapLevel)
         {
-            mipmapLevel = MathHelper.Clamp(mipmapLevel, 0, 16);
+            mipmapLevel = MathHelper.Clamp(mipmapLevel, 0, MipmapLocator.MaxMipmapsCount - 1);
 
             var data = GetRawData(mipmapLevel);
 
@@ -79,8 +87,12 @@ namespace UnityCraft.Core.Graphics.Textures
             switch (compression)
             {
                 case Compression.Jpeg:
-                    // TODO: Implement
-                    throw new NotImplementedException();
+                    if (jpeg == null)
+                    {
+                        throw new NullReferenceException(nameof(jpeg));
+                    }
+
+                    return jpeg.GetPixels(data);
 
                 case Compression.Palette:
                     if (palette == null)
@@ -88,10 +100,19 @@ namespace UnityCraft.Core.Graphics.Textures
                         throw new NullReferenceException(nameof(palette));
                     }
 
-                    return palette.GetPixels(size, data);
+                    return palette.GetPixels(size, data, alphaBits);
 
                 default:
                     throw new IndexOutOfRangeException();
+            }
+        }
+
+        public void Dispose()
+        {
+            if (stream != null)
+            {
+                stream.Close();
+                stream = null;
             }
         }
 
