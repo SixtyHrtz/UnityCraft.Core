@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.IO;
 
 namespace UnityCraft.Core.Graphics.Textures
@@ -15,7 +16,12 @@ namespace UnityCraft.Core.Graphics.Textures
 
         internal Color[,] GetPixels(byte[] data)
         {
-            throw new System.NotImplementedException();
+            var jpegData = new byte[header.Length + data.Length];
+
+            Array.Copy(header, 0, jpegData, 0, header.Length);
+            Array.Copy(data, 0, jpegData, header.Length, data.Length);
+
+            throw new NotImplementedException();
         }
     }
 }
