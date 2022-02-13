@@ -64,9 +64,10 @@ namespace UnityCraft.Core.Graphics.Textures
             }
         }
 
-        // TODO: Add clamp
         public Color[,] GetPixels(int mipmapLevel)
         {
+            mipmapLevel = MathHelper.Clamp(mipmapLevel, 0, 16);
+
             var data = GetRawData(mipmapLevel);
 
             var scale = (int)Math.Pow(2, mipmapLevel);
