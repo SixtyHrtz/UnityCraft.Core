@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 using UnityCraft.Core.Extensions;
 
 namespace UnityCraft.Core.Graphics.Textures
@@ -32,7 +33,9 @@ namespace UnityCraft.Core.Graphics.Textures
 
         public Texture(Stream stream)
         {
-            using (var reader = new BinaryReader(stream))
+            this.stream = stream;
+
+            using (var reader = new BinaryReader(stream, Encoding.ASCII, true))
             {
                 signature = reader.ReadUInt32<Signature>();
                 if (!supportedSignatures.Contains(signature))
@@ -94,7 +97,7 @@ namespace UnityCraft.Core.Graphics.Textures
 
         private byte[] GetRawData(int mipmapLevel)
         {
-            if (stream == null)
+            if (stream == null || !stream.CanRead)
             {
                 throw new ObjectDisposedException(nameof(stream));
             }

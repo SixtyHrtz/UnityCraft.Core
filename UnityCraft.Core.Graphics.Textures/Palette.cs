@@ -16,7 +16,7 @@ namespace UnityCraft.Core.Graphics.Textures
             colors = reader.ReadColorRgbaArray(colors.Length);
         }
 
-        internal Color[,] GetPixels(Size size, byte[] data)
+        internal Color[,] GetPixels(Size size, AlphaBits alphaBits, byte[] data)
         {
             var result = new Color[size.Width, size.Height];
 
@@ -25,11 +25,37 @@ namespace UnityCraft.Core.Graphics.Textures
                 for (var x = 0; x < size.Width; x++)
                 {
                     var index = x + (size.Width * y);
-                    result[x, y] = colors[data[index]];
+
+                    var color = colors[data[index]];
+                    var alpha = GetAlpha(result.Length, alphaBits, data, index);
+
+                    result[x, y] = Color.FromArgb(alpha, color.B, color.G, color.R);
                 }
             }
 
             return result;
+        }
+
+        private byte GetAlpha(int length, AlphaBits alphaBits, byte[] data, int index)
+        {
+            byte b;
+
+            switch (alphaBits.Value)
+            {
+                case 1:
+                    b = data[length + (index / 8)];
+                    return (byte)((b & (1 << (index % 8))) == 0 ? 0 : 1);
+
+                case 4:
+                    b = data[length + (index / 2)];
+                    return (byte)((index % 2 == 0) ? ((b & 0x0F) << 4) : (b & 0xF0));
+
+                case 8:
+                    return data[length + index];
+
+                default:
+                    return byte.MaxValue;
+            }
         }
     }
 }
