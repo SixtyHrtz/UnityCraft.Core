@@ -19,6 +19,14 @@ namespace UnityCraft.Core.Extensions
             return result;
         }
 
+        public static Size ReadSize(this BinaryReader reader)
+        {
+            var width = reader.ReadInt32();
+            var height = reader.ReadInt32();
+
+            return new Size(width, height);
+        }
+
         public static Color ReadColorRgba(this BinaryReader reader)
         {
             var red = reader.ReadByte();

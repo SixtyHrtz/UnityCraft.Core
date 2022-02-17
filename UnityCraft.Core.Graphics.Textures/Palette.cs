@@ -1,46 +1,60 @@
-﻿using System.Drawing;
+﻿using System;
+using System.Drawing;
 using System.IO;
 using UnityCraft.Core.Extensions;
 
 namespace UnityCraft.Core.Graphics.Textures
 {
-    internal class Palette
+    internal class Palette : ITextureContent
     {
         private const int PaletteSize = 256;
 
+        private readonly ITexture texture;
+
         private readonly Color[] colors;
 
-        internal Palette(BinaryReader reader)
+        internal Palette(ITexture texture, BinaryReader reader)
         {
+            this.texture = texture;
+
             colors = new Color[PaletteSize];
             colors = reader.ReadColorRgbaArray(colors.Length);
         }
 
-        internal Color[,] GetPixels(Size size, byte[] data, AlphaBits alphaBits)
+        public Color[,] GetPixels(int mipmapLevel)
         {
-            var result = new Color[size.Width, size.Height];
+            var scale = (int)Math.Pow(2, mipmapLevel);
+            var size = new Size(texture.Size.Width / scale, texture.Size.Height / scale);
 
-            for (var y = 0; y < size.Height; y++)
+            var rawBytes = texture.GetRawBytes(mipmapLevel);
+            var bytes = GetBytes(size, rawBytes, texture.AlphaBits);
+
+            return texture.GetPixelsFromBytes(size, bytes);
+        }
+
+        internal byte[] GetBytes(Size size, byte[] data, uint alphaBits)
+        {
+            var length = size.Width * size.Height;
+            var result = new byte[length * 4];
+
+            for (int i = 0; i < length; i++)
             {
-                for (var x = 0; x < size.Width; x++)
-                {
-                    var index = x + (size.Width * y);
+                var color = colors[data[i]];
 
-                    var color = colors[data[index]];
-                    var alpha = GetAlpha(alphaBits, data, index, result.Length);
-
-                    result[x, y] = Color.FromArgb(alpha, color.B, color.G, color.R);
-                }
+                result[(i * 4) + 0] = color.R;
+                result[(i * 4) + 1] = color.G;
+                result[(i * 4) + 2] = color.B;
+                result[(i * 4) + 3] = GetAlpha(alphaBits, data, i, result.Length);
             }
 
             return result;
         }
 
-        private byte GetAlpha(AlphaBits alphaBits, byte[] data, int index, int length)
+        private byte GetAlpha(uint alphaBits, byte[] data, int index, int length)
         {
             byte @byte;
 
-            switch (alphaBits.Value)
+            switch (alphaBits)
             {
                 case 1:
                     @byte = data[length + (index / 8)];

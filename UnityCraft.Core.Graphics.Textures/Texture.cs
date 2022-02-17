@@ -7,7 +7,7 @@ using UnityCraft.Core.Extensions;
 
 namespace UnityCraft.Core.Graphics.Textures
 {
-    public class Texture : IDisposable
+    public class Texture : ITexture, IDisposable
     {
         private readonly Signature[] supportedSignatures = new Signature[]
         {
@@ -19,16 +19,14 @@ namespace UnityCraft.Core.Graphics.Textures
 
         private readonly AlphaBits alphaBits;
 
-        private readonly uint width;
-        private readonly uint height;
+        private readonly Size size;
 
         private readonly Extra extra;
         private readonly bool hasMipmaps;
 
         private readonly MipmapLocator mipmapLocator;
 
-        private readonly Jpeg jpeg;
-        private readonly Palette palette;
+        private readonly ITextureContent textureContent;
 
         private Stream stream;
 
@@ -48,8 +46,7 @@ namespace UnityCraft.Core.Graphics.Textures
 
                 alphaBits = new AlphaBits(reader.ReadUInt32(), compression);
 
-                width = reader.ReadUInt32();
-                height = reader.ReadUInt32();
+                size = reader.ReadSize();
 
                 extra = new Extra(reader.ReadUInt32());
                 hasMipmaps = Convert.ToBoolean(reader.ReadUInt32());
@@ -59,52 +56,26 @@ namespace UnityCraft.Core.Graphics.Textures
                 switch (compression)
                 {
                     case Compression.Jpeg:
-                        jpeg = new Jpeg(reader);
+                        textureContent = new Jpeg(this, reader);
                         break;
 
                     case Compression.Palette:
-                        palette = new Palette(reader);
+                        textureContent = new Palette(this, reader);
                         break;
                 }
             }
         }
 
-        public int Width => (int)width;
+        public uint AlphaBits => alphaBits.Value;
 
-        public int Height => (int)height;
+        public Size Size => size;
 
         public int MipmapCount => mipmapLocator.MipmapsCount;
 
         public Color[,] GetPixels(int mipmapLevel)
         {
-            mipmapLevel = MathHelper.Clamp(mipmapLevel, 0, MipmapLocator.MaxMipmapsCount - 1);
-
-            var data = GetRawData(mipmapLevel);
-
-            var scale = (int)Math.Pow(2, mipmapLevel);
-            var size = new Size((int)width / scale, (int)height / scale);
-
-            switch (compression)
-            {
-                case Compression.Jpeg:
-                    if (jpeg == null)
-                    {
-                        throw new NullReferenceException(nameof(jpeg));
-                    }
-
-                    return jpeg.GetPixels(data);
-
-                case Compression.Palette:
-                    if (palette == null)
-                    {
-                        throw new NullReferenceException(nameof(palette));
-                    }
-
-                    return palette.GetPixels(size, data, alphaBits);
-
-                default:
-                    throw new IndexOutOfRangeException();
-            }
+            mipmapLevel = MipmapLocator.NormalizeMipmapLevel(mipmapLevel);
+            return textureContent.GetPixels(mipmapLevel);
         }
 
         public void Dispose()
@@ -116,17 +87,40 @@ namespace UnityCraft.Core.Graphics.Textures
             }
         }
 
-        private byte[] GetRawData(int mipmapLevel)
+        public Color[,] GetPixelsFromBytes(Size size, byte[] bytes)
         {
-            if (stream == null || !stream.CanRead)
+            if (bytes == null)
             {
-                throw new ObjectDisposedException(nameof(stream));
+                throw new ArgumentNullException(nameof(bytes));
             }
 
-            var mipmap = mipmapLocator.MipmapHeaders[mipmapLevel];
+            var result = new Color[size.Width, size.Height];
 
-            var data = new byte[mipmap.Size];
-            stream.Position = mipmap.Offset;
+            var index = 0;
+            for (var y = 0; y < size.Height; y++)
+            {
+                for (var x = 0; x < size.Width; x++)
+                {
+                    var blue = bytes[index++];
+                    var green = bytes[index++];
+                    var red = bytes[index++];
+                    var alpha = bytes[index++];
+
+                    result[x, y] = Color.FromArgb(alpha, red, green, blue);
+                }
+            }
+
+            return result;
+        }
+
+        public byte[] GetRawBytes(int mipmapLevel)
+        {
+            mipmapLevel = MipmapLocator.NormalizeMipmapLevel(mipmapLevel);
+
+            var mipmapHeader = mipmapLocator.MipmapHeaders[mipmapLevel];
+
+            var data = new byte[mipmapHeader.Size];
+            stream.Position = mipmapHeader.Offset;
             stream.Read(data, 0, data.Length);
 
             return data;
