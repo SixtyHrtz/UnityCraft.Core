@@ -1,6 +1,7 @@
 ﻿using System.Linq;
+using UnityCraft.Core.Graphics.Textures.Enums;
 
-namespace UnityCraft.Core.Graphics.Textures
+namespace UnityCraft.Core.Graphics.Textures.Models
 {
     internal class AlphaBits
     {

@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 
-namespace UnityCraft.Core.Graphics.Textures
+namespace UnityCraft.Core.Graphics.Textures.Models
 {
     internal class Extra
     {

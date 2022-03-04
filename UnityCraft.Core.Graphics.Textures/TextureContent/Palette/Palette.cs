@@ -2,8 +2,9 @@
 using System.Drawing;
 using System.IO;
 using UnityCraft.Core.Extensions;
+using UnityCraft.Core.Graphics.Textures.Interfaces;
 
-namespace UnityCraft.Core.Graphics.Textures
+namespace UnityCraft.Core.Graphics.Textures.TextureContent.Palette
 {
     internal class Palette : ITextureContent
     {
@@ -44,7 +45,7 @@ namespace UnityCraft.Core.Graphics.Textures
                 result[(i * 4) + 0] = color.R;
                 result[(i * 4) + 1] = color.G;
                 result[(i * 4) + 2] = color.B;
-                result[(i * 4) + 3] = GetAlpha(alphaBits, data, i, result.Length);
+                result[(i * 4) + 3] = GetAlpha(alphaBits, data, i, length);
             }
 
             return result;
@@ -58,7 +59,7 @@ namespace UnityCraft.Core.Graphics.Textures
             {
                 case 1:
                     @byte = data[length + (index / 8)];
-                    return (byte)((@byte & (1 << (index % 8))) == 0 ? byte.MinValue : byte.MaxValue);
+                    return (@byte & (1 << (index % 8))) == 0 ? byte.MinValue : byte.MaxValue;
 
                 case 4:
                     @byte = data[length + (index / 2)];

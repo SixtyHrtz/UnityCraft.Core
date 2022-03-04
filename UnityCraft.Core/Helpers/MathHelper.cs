@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace UnityCraft.Core.Extensions
+namespace UnityCraft.Core.Helpers
 {
     public static class MathHelper
     {

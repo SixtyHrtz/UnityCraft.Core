@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 
-namespace UnityCraft.Core.Graphics.Textures
+namespace UnityCraft.Core.Graphics.Textures.Interfaces
 {
     public interface ITexture
     {
