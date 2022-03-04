@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using JpegLibrary;
-using UnityCraft.Core.Extensions;
+using UnityCraft.Core.Helpers;
 
-namespace UnityCraft.Core.Graphics.Textures
+namespace UnityCraft.Core.Graphics.Textures.TextureContent.Jpeg.BlockOutputWriters
 {
     internal class JpegBlockOutputWriterGreaterThan8Bit : JpegBlockOutputWriter
     {
@@ -23,7 +23,7 @@ namespace UnityCraft.Core.Graphics.Textures
 
             if (decoder.Precision < 8)
             {
-                throw new ArgumentOutOfRangeException(nameof(decoder.Precision));
+                throw new IndexOutOfRangeException(nameof(decoder.Precision));
             }
 
             width = decoder.Width;

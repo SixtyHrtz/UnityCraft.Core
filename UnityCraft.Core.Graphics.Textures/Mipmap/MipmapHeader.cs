@@ -1,4 +1,4 @@
-﻿namespace UnityCraft.Core.Graphics.Textures
+﻿namespace UnityCraft.Core.Graphics.Textures.Mipmap
 {
     internal class MipmapHeader
     {

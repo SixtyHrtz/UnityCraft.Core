@@ -2,8 +2,10 @@
 using System.Drawing;
 using System.IO;
 using JpegLibrary;
+using UnityCraft.Core.Graphics.Textures.Interfaces;
+using UnityCraft.Core.Graphics.Textures.TextureContent.Jpeg.BlockOutputWriters;
 
-namespace UnityCraft.Core.Graphics.Textures
+namespace UnityCraft.Core.Graphics.Textures.TextureContent.Jpeg
 {
     internal class Jpeg : ITextureContent
     {
@@ -46,16 +48,22 @@ namespace UnityCraft.Core.Graphics.Textures
 
             var destination = new byte[decoder.Width * decoder.Height * decoder.NumberOfComponents];
 
-            if (decoder.Precision != 8)
+            JpegBlockOutputWriter outputWriter;
+
+            if (decoder.Precision > 8)
             {
-                throw new NotImplementedException();
+                outputWriter = new JpegBlockOutputWriterGreaterThan8Bit(decoder, destination);
+            }
+            else if (decoder.Precision < 8)
+            {
+                outputWriter = new JpegBlockOutputWriterLessThan8Bit(decoder, destination);
             }
             else
             {
-                var outputWriter = new JpegBlockOutputWriter8Bit(decoder, destination);
-                decoder.SetOutputWriter(outputWriter);
+                outputWriter = new JpegBlockOutputWriter8Bit(decoder, destination);
             }
 
+            decoder.SetOutputWriter(outputWriter);
             decoder.Decode();
 
             return destination;

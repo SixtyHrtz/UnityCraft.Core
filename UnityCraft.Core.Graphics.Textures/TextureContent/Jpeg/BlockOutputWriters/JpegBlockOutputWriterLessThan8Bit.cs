@@ -1,27 +1,36 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using JpegLibrary;
-using UnityCraft.Core.Extensions;
+using UnityCraft.Core.Helpers;
 
-namespace UnityCraft.Core.Graphics.Textures
+namespace UnityCraft.Core.Graphics.Textures.TextureContent.Jpeg.BlockOutputWriters
 {
-    internal class JpegBlockOutputWriter8Bit : JpegBlockOutputWriter
+    internal class JpegBlockOutputWriterLessThan8Bit : JpegBlockOutputWriter
     {
+        private const int TargetBitCount = 8;
+
         private readonly int width;
         private readonly int height;
+        private readonly int precision;
         private readonly int componentsCount;
 
         private readonly Memory<byte> destination;
 
-        public JpegBlockOutputWriter8Bit(JpegDecoder decoder, Memory<byte> destination)
+        public JpegBlockOutputWriterLessThan8Bit(JpegDecoder decoder, Memory<byte> destination)
         {
             if (destination.Length < (decoder.Width * decoder.Height * decoder.NumberOfComponents))
             {
                 throw new ArgumentException("Destination buffer is too small.");
             }
 
+            if (decoder.Precision > 8)
+            {
+                throw new IndexOutOfRangeException(nameof(decoder.Precision));
+            }
+
             width = decoder.Width;
             height = decoder.Height;
+            precision = decoder.Precision;
             componentsCount = decoder.NumberOfComponents;
 
             this.destination = destination;
@@ -33,6 +42,8 @@ namespace UnityCraft.Core.Graphics.Textures
             {
                 throw new IndexOutOfRangeException();
             }
+
+            var max = (1 << precision) - 1;
 
             var writeWidth = Math.Min(width - x, 8);
             var writeHeight = Math.Min(height - y, 8);
@@ -46,7 +57,8 @@ namespace UnityCraft.Core.Graphics.Textures
 
                 for (var destX = 0; destX < writeWidth; destX++)
                 {
-                    span[offset] = ClampTo8Bit(Unsafe.Add(ref blockRef, destX));
+                    var value = MathHelper.Clamp(Unsafe.Add(ref blockRef, destX), 0, max);
+                    span[offset] = (byte)ExpandBits((uint)value, precision);
 
                     offset += componentsCount;
                 }
@@ -55,10 +67,31 @@ namespace UnityCraft.Core.Graphics.Textures
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static byte ClampTo8Bit(short input)
+        private static uint ExpandBits(uint bits, int bitCount)
         {
-            return (byte)MathHelper.Clamp(input, byte.MinValue, byte.MaxValue);
+            var currentBitCount = bitCount;
+
+            while (currentBitCount < TargetBitCount)
+            {
+                bits = (bits << bitCount) | bits;
+                currentBitCount += bitCount;
+            }
+
+            if (currentBitCount > TargetBitCount)
+            {
+                bits >>= bitCount;
+                currentBitCount -= bitCount;
+                bits = FastExpandBits(bits, currentBitCount);
+            }
+
+            return bits;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static uint FastExpandBits(uint bits, int bitCount)
+        {
+            var remainingBits = TargetBitCount - bitCount;
+            return (bits << remainingBits) | (bits & ((uint)(1 << remainingBits) - 1));
         }
     }
 }

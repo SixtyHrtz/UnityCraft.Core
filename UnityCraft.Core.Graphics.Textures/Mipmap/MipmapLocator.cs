@@ -1,8 +1,9 @@
 ﻿using System.IO;
 using System.Linq;
 using UnityCraft.Core.Extensions;
+using UnityCraft.Core.Helpers;
 
-namespace UnityCraft.Core.Graphics.Textures
+namespace UnityCraft.Core.Graphics.Textures.Mipmap
 {
     internal class MipmapLocator
     {

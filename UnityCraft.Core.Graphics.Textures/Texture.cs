@@ -4,25 +4,25 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using UnityCraft.Core.Extensions;
+using UnityCraft.Core.Graphics.Textures.Enums;
+using UnityCraft.Core.Graphics.Textures.Interfaces;
+using UnityCraft.Core.Graphics.Textures.Mipmap;
+using UnityCraft.Core.Graphics.Textures.Models;
+using UnityCraft.Core.Graphics.Textures.TextureContent.Jpeg;
+using UnityCraft.Core.Graphics.Textures.TextureContent.Palette;
 
 namespace UnityCraft.Core.Graphics.Textures
 {
-    public class Texture : ITexture, IDisposable
+    public sealed class Texture : ITexture, IDisposable
     {
         private readonly Signature[] supportedSignatures = new Signature[]
         {
             Signature.BLP1,
         };
 
-        private readonly Signature signature;
-        private readonly Compression compression;
-
         private readonly AlphaBits alphaBits;
 
         private readonly Size size;
-
-        private readonly Extra extra;
-        private readonly bool hasMipmaps;
 
         private readonly MipmapLocator mipmapLocator;
 
@@ -36,20 +36,23 @@ namespace UnityCraft.Core.Graphics.Textures
 
             using (var reader = new BinaryReader(stream, Encoding.ASCII, true))
             {
-                signature = reader.ReadUInt32<Signature>();
+                var signature = reader.ReadUInt32<Signature>();
                 if (!supportedSignatures.Contains(signature))
                 {
                     throw new NotSupportedException($"{signature} is not supported.");
                 }
 
-                compression = reader.ReadUInt32<Compression>();
+                var compression = reader.ReadUInt32<Compression>();
 
                 alphaBits = new AlphaBits(reader.ReadUInt32(), compression);
 
                 size = reader.ReadSize();
 
-                extra = new Extra(reader.ReadUInt32());
-                hasMipmaps = Convert.ToBoolean(reader.ReadUInt32());
+                // Extra
+                _ = new Extra(reader.ReadUInt32());
+
+                // HasMipmaps
+                _ = Convert.ToBoolean(reader.ReadUInt32());
 
                 mipmapLocator = new MipmapLocator(reader);
 
