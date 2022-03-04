@@ -1,4 +1,4 @@
-﻿namespace UnityCraft.Core.Graphics.Textures
+﻿namespace UnityCraft.Core.Graphics.Textures.Enums
 {
     internal enum Compression : uint
     {
